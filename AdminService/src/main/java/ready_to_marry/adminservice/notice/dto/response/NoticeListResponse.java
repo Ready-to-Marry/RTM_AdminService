@@ -1,15 +1,15 @@
-package ready_to_marry.adminservice.common.dto;
+package ready_to_marry.adminservice.notice.dto.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
+
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
-@Builder
-public class Meta {
+public class NoticeListResponse {
+    private List<NoticeDTO> items;
     private int page;
     private int size;
     private long total;
-    private int totalPages;
 }

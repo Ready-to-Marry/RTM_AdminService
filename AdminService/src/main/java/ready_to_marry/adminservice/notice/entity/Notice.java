@@ -17,6 +17,8 @@ public class Notice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long noticeId;
 
+    private Long adminId;
+
     private String title;
 
     @Column(columnDefinition = "TEXT")
