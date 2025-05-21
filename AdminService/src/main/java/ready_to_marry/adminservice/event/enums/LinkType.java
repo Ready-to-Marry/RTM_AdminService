@@ -1,10 +1,6 @@
 package ready_to_marry.adminservice.event.enums;
 
 public enum LinkType {
-    SD, // Special Deal
-    CE; // Coupon Event
-
-    public static LinkType from(String value) {
-        return LinkType.valueOf(value.toUpperCase());
-    }
+    SD, // 상품 특가 (Special Deal)
+    CE  // 쿠폰 이벤트 (Coupon Event)
 }
