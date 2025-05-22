@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventCreateRequest {
+public class EventUpdateRequest {
     private LinkType linkType;
     private String title;
     private LocalDateTime startDate;

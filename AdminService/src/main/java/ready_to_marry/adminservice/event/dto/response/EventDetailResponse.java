@@ -4,33 +4,51 @@ import lombok.Builder;
 import lombok.Getter;
 import ready_to_marry.adminservice.event.entity.Coupon;
 import ready_to_marry.adminservice.event.entity.Event;
-import ready_to_marry.adminservice.event.enums.LinkType;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
 public class EventDetailResponse {
-    private Long eventId;
-    private LinkType linkType;
+
+    // 쿠폰 정보
+    private Long couponId;
     private String title;
-    private String thumbnailImageUrl;
-    private String linkUrl;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
+    private String discountType;
+    private Long discountAmount;
+    private int totalQuantity;
+    private int issuedQuantity;
+    private boolean isActive;
+    private LocalDateTime issuedFrom;
+    private LocalDateTime issuedUntil;
+    private LocalDateTime availableFrom;
+    private LocalDateTime availableUntil;
 
-    private CouponResponse coupon; // 쿠폰 정보 (nullable)
+    // 이벤트 정보
+    private Long eventId;
+    private String eventTitle;
+    private String eventThumbnailUrl;
+    private LocalDateTime eventStartDate;
+    private LocalDateTime eventEndDate;
 
-    public static EventDetailResponse from(Event e, Coupon coupon) {
+    public static EventDetailResponse from(Coupon coupon, Event event) {
         return EventDetailResponse.builder()
-                .eventId(e.getEventId())
-                .linkType(e.getLinkType())
-                .title(e.getTitle())
-                .thumbnailImageUrl(e.getThumbnailImageUrl())
-                .linkUrl(e.getLinkUrl())
-                .startDate(e.getStartDate())
-                .endDate(e.getEndDate())
-                .coupon(coupon != null ? CouponResponse.from(coupon) : null)
+                .couponId(coupon.getCouponId())
+                .title(coupon.getTitle())
+                .discountType(coupon.getDiscountType())
+                .discountAmount(coupon.getDiscountAmount())
+                .totalQuantity(coupon.getTotalQuantity())
+                .issuedQuantity(coupon.getIssuedQuantity())
+                .isActive(coupon.isActive())
+                .issuedFrom(coupon.getIssuedFrom())
+                .issuedUntil(coupon.getIssuedUntil())
+                .availableFrom(coupon.getAvailableFrom())
+                .availableUntil(coupon.getAvailableUntil())
+                .eventId(event.getEventId())
+                .eventTitle(event.getTitle())
+                .eventThumbnailUrl(event.getThumbnailImageUrl())
+                .eventStartDate(event.getStartDate())
+                .eventEndDate(event.getEndDate())
                 .build();
     }
 }

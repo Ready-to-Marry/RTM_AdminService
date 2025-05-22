@@ -2,6 +2,7 @@ package ready_to_marry.adminservice.event.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ready_to_marry.adminservice.event.dto.request.CouponRequest;
 
 import java.time.LocalDateTime;
 
@@ -27,9 +28,6 @@ public class Coupon {
     private Long discountAmount;
 
     @Column(nullable = false)
-    private LocalDateTime validUntil;
-
-    @Column(nullable = false)
     private int totalQuantity;
 
     @Column(nullable = false)
@@ -49,4 +47,30 @@ public class Coupon {
 
     @Column(nullable = false)
     private LocalDateTime availableUntil; // 사용 가능 마감일
+
+    public static Coupon from(ready_to_marry.adminservice.event.dto.request.CouponRequest request) {
+        return Coupon.builder()
+                .title(request.getTitle())
+                .discountType(request.getDiscountType())
+                .discountAmount(request.getDiscountAmount())
+                .totalQuantity(request.getTotalQuantity())
+                .issuedQuantity(0)
+                .isActive(true)
+                .issuedFrom(request.getIssuedFrom())
+                .issuedUntil(request.getIssuedUntil())
+                .availableFrom(request.getAvailableFrom())
+                .availableUntil(request.getAvailableUntil())
+                .build();
+    }
+
+    public void updateFrom(CouponRequest request) {
+        this.title = request.getTitle();
+        this.discountType = request.getDiscountType();
+        this.discountAmount = request.getDiscountAmount();
+        this.totalQuantity = request.getTotalQuantity();
+        this.issuedFrom = request.getIssuedFrom();
+        this.issuedUntil = request.getIssuedUntil();
+        this.availableFrom = request.getAvailableFrom();
+        this.availableUntil = request.getAvailableUntil();
+    }
 }

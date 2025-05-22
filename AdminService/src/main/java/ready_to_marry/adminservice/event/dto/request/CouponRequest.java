@@ -7,14 +7,15 @@ import java.time.LocalDateTime;
 @Getter
 public class CouponRequest {
     private String title;
-    private String discountType;   // e.g., FIXED or PERCENT
+    private String discountType;
     private Long discountAmount;
 
     private LocalDateTime validUntil;
-    private int totalQuantity;
+    private Integer totalQuantity;
 
     private LocalDateTime issuedFrom;
     private LocalDateTime issuedUntil;
+
     private LocalDateTime availableFrom;
     private LocalDateTime availableUntil;
 }

@@ -12,4 +12,14 @@ public class Meta {
     private int size;
     private long total;
     private int totalPages;
+
+    public static Meta of(int page, int size, long total) {
+        int totalPages = (int) Math.ceil((double) total / size);
+        return Meta.builder()
+                .page(page)
+                .size(size)
+                .total(total)
+                .totalPages(totalPages)
+                .build();
+    }
 }
