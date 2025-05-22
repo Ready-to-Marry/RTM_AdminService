@@ -19,8 +19,6 @@ public class EventCreateRequest {
     private String title;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private boolean mainBanner;
-    private Integer priority;
 
     private Long targetId; // 상품 특가(SD)일 경우 itemId, 쿠폰(CE)일 경우 couponId
 }

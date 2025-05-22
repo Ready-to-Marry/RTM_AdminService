@@ -31,8 +31,6 @@ public class TrendPostServiceImpl implements TrendPostService {
                 .title(request.getTitle())
                 .thumbnailUrl(request.getThumbnailUrl())
                 .contentImageUrl(request.getContentImageUrl())
-                .mainBanner(Boolean.TRUE.equals(request.getMainBanner()))
-                .priority(request.getPriority())
                 .adminId(adminId)
                 .build();
 
@@ -54,8 +52,6 @@ public class TrendPostServiceImpl implements TrendPostService {
         post.setTitle(request.getTitle());
         post.setThumbnailUrl(request.getThumbnailUrl());
         post.setContentImageUrl(request.getContentImageUrl());
-        post.setMainBanner(Boolean.TRUE.equals(request.getMainBanner()));
-        post.setPriority(request.getPriority());
 
         return TrendPostDetailResponse.from(post);
     }
@@ -73,15 +69,6 @@ public class TrendPostServiceImpl implements TrendPostService {
 
         repository.delete(post);
     }
-
-    // 4. ALL -> 메인 배너용 포스트 리스트 조회
-    @Override
-    public List<TrendPostBannerResponse> getMainBanners() {
-        return repository.findByMainBannerTrueOrderByPriorityAsc().stream()
-                .map(TrendPostBannerResponse::from)
-                .collect(Collectors.toList());
-    }
-
 
     // 5. ALL -> 전체 트렌드 포스트 목록 조회
     @Override

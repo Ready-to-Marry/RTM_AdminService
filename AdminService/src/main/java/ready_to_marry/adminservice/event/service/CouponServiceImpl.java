@@ -21,8 +21,8 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     @Transactional
-    public CouponDetailResponse createCoupon(CouponRequest request) {
-        Coupon coupon = couponRepository.save(Coupon.from(request));
+    public CouponDetailResponse createCoupon(CouponRequest request, Long adminId) {
+        Coupon coupon = couponRepository.save(Coupon.from(request, adminId));
         return CouponDetailResponse.from(coupon);
     }
 

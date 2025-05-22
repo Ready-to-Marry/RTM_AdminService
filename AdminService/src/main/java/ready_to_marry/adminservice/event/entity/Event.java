@@ -40,12 +40,6 @@ public class Event {
     @Column(nullable = false)
     private LocalDateTime endDate;
 
-    @Column(nullable = false)
-    private int priority;
-
-    @Column(nullable = false)
-    private boolean mainBanner;
-
     @Column(nullable = false, updatable = false)
     private Long adminId;
 

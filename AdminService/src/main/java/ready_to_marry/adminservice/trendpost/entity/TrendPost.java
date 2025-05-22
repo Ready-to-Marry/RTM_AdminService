@@ -21,13 +21,6 @@ public class TrendPost {
     private String title;
     private String contentImageUrl;
 
-    // 1. 메인 배너 노출 여부
-    @Column(nullable = false)
-    private boolean mainBanner;
-
-    // 2. 우선순위 (mainBanner=true일 경우만 의미 있음)
-    private Integer priority;
-
     // 등록한 관리자 ID
     @Column(nullable = false, updatable = false)
     private Long adminId;

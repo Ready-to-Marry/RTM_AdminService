@@ -12,8 +12,7 @@ public interface TrendPostService {
     TrendPostDetailResponse update(Long id, TrendPostRequest request, Long adminId);
     void delete(Long id, Long adminId);
 
-    // 2. Public
-    List<TrendPostBannerResponse> getMainBanners();     // 홈 배너용
+    // 홈 배너용
     // 5. ALL -> 전체 트렌드 포스트 목록 조회
     TrendPostPagedResponse getAllPaged(int page, int size);
 

@@ -5,8 +5,6 @@ import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
 import ready_to_marry.adminservice.event.dto.response.*;
 
-import java.util.List;
-
 public interface EventService {
 
     // 1. 이벤트 등록
@@ -18,15 +16,9 @@ public interface EventService {
     // 3. 이벤트 삭제
     void deleteEvent(Long eventId, Long adminId);
 
-    // 4. 상세 조회
+    // 4. 이벤트 상세 조회 (linkType이 CE일 경우 coupon 정보 포함)
     EventDetailResponse getEventDetail(Long eventId);
 
-    // 5. 메인 배너용 조회
-    List<EventBannerResponse> getMainBannerEvents();
-
-    // 6. 전체 이벤트 목록 조회 (페이징)
+    // 5. 전체 이벤트 목록 페이징 조회
     EventPagedResponse getPagedEvents(int page, int size);
-
-    // 7. 쿠폰 발급 (Event에서 trigger)
-    CouponDetailResponse issueCoupon(Long couponId, Long userId);
 }

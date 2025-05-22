@@ -18,8 +18,9 @@ public class AdminCouponController {
 
     // 1. 쿠폰 등록
     @PostMapping
-    public ApiResponse<CouponDetailResponse> createCoupon(@RequestBody CouponRequest request) {
-        return ApiResponse.success(couponService.createCoupon(request));
+    public ApiResponse<CouponDetailResponse> createCoupon(@RequestBody CouponRequest request,
+                                                          @RequestHeader("X-ADMIN-ID") Long adminId) {
+        return ApiResponse.success(couponService.createCoupon(request, adminId));
     }
 
     // 2. 쿠폰 수정

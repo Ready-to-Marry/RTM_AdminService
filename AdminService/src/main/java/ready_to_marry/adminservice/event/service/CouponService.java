@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface CouponService {
 
-    CouponDetailResponse createCoupon(CouponRequest request);
+    CouponDetailResponse createCoupon(CouponRequest request, Long adminId);
 
     void updateCoupon(Long couponId, CouponRequest request);
 
