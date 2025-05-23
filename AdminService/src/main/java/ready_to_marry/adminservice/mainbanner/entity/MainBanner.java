@@ -27,4 +27,18 @@ public class MainBanner {
 
     @Column(nullable = false)
     private int priority;
+
+    @Column(nullable = false, updatable = false)
+    private Long createdBy;
+
+    @Column
+    private Long modifiedBy;
+
+    public void update(BannerType type, Long refId, int priority, Long adminId) {
+        this.type = type;
+        this.refId = refId;
+        this.priority = priority;
+        this.modifiedBy = adminId;
+    }
 }
+

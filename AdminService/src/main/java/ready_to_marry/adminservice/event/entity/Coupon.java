@@ -48,9 +48,12 @@ public class Coupon {
     @Column(nullable = false)
     private LocalDateTime availableUntil; // 사용 가능 마감일
 
+    // ✅ 최초 등록자 (수정 불가)
     @Column(nullable = false, updatable = false)
     private Long adminId;
 
+    @Column
+    private Long modifiedBy;
 
     public static Coupon from(CouponRequest request, Long adminId) {
         return Coupon.builder()
@@ -68,7 +71,7 @@ public class Coupon {
                 .build();
     }
 
-    public void updateFrom(CouponRequest request) {
+    public void updateFrom(CouponRequest request, Long adminId) {
         this.title = request.getTitle();
         this.discountType = request.getDiscountType();
         this.discountAmount = request.getDiscountAmount();
@@ -77,5 +80,6 @@ public class Coupon {
         this.issuedUntil = request.getIssuedUntil();
         this.availableFrom = request.getAvailableFrom();
         this.availableUntil = request.getAvailableUntil();
+        this.modifiedBy = adminId;
     }
 }

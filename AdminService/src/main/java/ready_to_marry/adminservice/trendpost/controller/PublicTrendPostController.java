@@ -19,7 +19,7 @@ public class PublicTrendPostController {
 
     private final TrendPostService service;
 
-    //1. 전체 트렌드 포스트 목록 조회 -> @return List of TrendPostListResponse
+    //1. 전체 TrendPost 목록 조회 -> @return List of TrendPostListResponse
     @GetMapping
     public ApiResponse<List<TrendPostDTO>> getPagedList(
             @RequestParam(defaultValue = "1") int page,
@@ -37,7 +37,7 @@ public class PublicTrendPostController {
         return ApiResponse.success(response.getItems(), meta);
     }
 
-    // 2. 트렌드 포스트 상세 조회 -> @param id 트렌드 포스트 ID / @return TrendPostDetailResponse
+    // 2. TrendPost 상세 조회 -> @param id 트렌드 포스트 ID / @return TrendPostDetailResponse
     @GetMapping("/{id}")
     public ApiResponse<TrendPostDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(service.getById(id));

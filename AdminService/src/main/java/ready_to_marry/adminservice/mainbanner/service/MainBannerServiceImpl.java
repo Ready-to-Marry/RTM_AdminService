@@ -24,36 +24,33 @@ public class MainBannerServiceImpl implements MainBannerService {
     private final EventRepository eventRepository;
     private final TrendPostRepository trendPostRepository;
 
-    @Override
     @Transactional
-    public void register(MainBannerRequest request) {
+    @Override
+    public void register(MainBannerRequest request, Long adminId) {
         MainBanner banner = MainBanner.builder()
                 .type(request.getType())
                 .refId(request.getRefId())
                 .priority(request.getPriority())
+                .createdBy(adminId)
                 .build();
         bannerRepository.save(banner);
     }
 
-    @Override
     @Transactional
-    public void update(Long mainBannerId, MainBannerRequest request) {
+    @Override
+    public void update(Long mainBannerId, MainBannerRequest request, Long adminId) {
         MainBanner banner = bannerRepository.findById(mainBannerId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너입니다."));
 
-        banner = MainBanner.builder()
-                .mainBannerId(mainBannerId)
-                .type(request.getType())
-                .refId(request.getRefId())
-                .priority(request.getPriority())
-                .build();
-        bannerRepository.save(banner);
+        banner.update(request.getType(), request.getRefId(), request.getPriority(), adminId);
     }
 
-    @Override
     @Transactional
-    public void delete(Long id) {
-        bannerRepository.deleteById(id);
+    @Override
+    public void delete(Long id, Long adminId) {
+        MainBanner banner = bannerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너입니다."));
+        bannerRepository.delete(banner);
     }
 
     @Override
