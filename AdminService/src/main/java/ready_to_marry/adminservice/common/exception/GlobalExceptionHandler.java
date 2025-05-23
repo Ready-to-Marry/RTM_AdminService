@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
     // 6. 그 외 예상치 못한 예외
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnknown(Exception ex) {
-        log.error("⚠️ Unhandled exception", ex);
+        log.error("Unhandled exception", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다."));
     }
