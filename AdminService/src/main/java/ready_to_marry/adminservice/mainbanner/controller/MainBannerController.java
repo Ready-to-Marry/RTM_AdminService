@@ -18,27 +18,30 @@ public class MainBannerController {
 
     // 1. 메인 배너 등록
     @PostMapping("/admin")
-    public ApiResponse<Void> register(@RequestBody MainBannerRequest request) {
-        service.register(request);
+    public ApiResponse<Void> register(@RequestBody MainBannerRequest request,
+                                      @RequestHeader("X-ADMIN-ID") Long adminId) {
+        service.register(request, adminId);
         return ApiResponse.success(null);
     }
 
     // 2. 메인 배너 수정
     @PatchMapping("/admin/{mainBannerId}")
     public ApiResponse<Void> update(@PathVariable Long mainBannerId,
-                                    @RequestBody MainBannerRequest request) {
-        service.update(mainBannerId, request);
+                                    @RequestBody MainBannerRequest request,
+                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+        service.update(mainBannerId, request, adminId);
         return ApiResponse.success(null);
     }
 
     // 3. 메인 배너 삭제
     @DeleteMapping("/admin/{mainBannerId}")
-    public ApiResponse<Void> delete(@PathVariable Long mainBannerId) {
-        service.delete(mainBannerId);
+    public ApiResponse<Void> delete(@PathVariable Long mainBannerId,
+                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+        service.delete(mainBannerId, adminId);
         return ApiResponse.success(null);
     }
 
-    // 4. 메인 배너 전체 조회
+    // 4. 메인 배너 전체 조회 (공개 API)
     @GetMapping
     public ApiResponse<List<MainBannerResponse>> getAll() {
         return ApiResponse.success(service.getAll());
