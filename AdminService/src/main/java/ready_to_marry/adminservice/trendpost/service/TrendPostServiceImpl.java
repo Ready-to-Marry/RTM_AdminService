@@ -1,47 +1,50 @@
 package ready_to_marry.adminservice.trendpost.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.exception.BusinessException;
 import ready_to_marry.adminservice.common.exception.ErrorCode;
 import ready_to_marry.adminservice.trendpost.dto.request.TrendPostRequest;
 import ready_to_marry.adminservice.trendpost.dto.response.*;
 import ready_to_marry.adminservice.trendpost.entity.TrendPost;
 import ready_to_marry.adminservice.trendpost.repository.TrendPostRepository;
+import ready_to_marry.adminservice.common.util.S3Uploader;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class TrendPostServiceImpl implements TrendPostService {
 
     private final TrendPostRepository repository;
+    private final S3Uploader s3Uploader;
 
-
-    // 1. Admin -> Trendpost 등록
+    // 1. Admin -> 등록
     @Override
     @Transactional
-    public TrendPostDetailResponse create(TrendPostRequest request, Long adminId) {
+    public TrendPostDetailResponse create(TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
+        String thumbnailUrl = s3Uploader.upload(thumbnail, "trendposts/thumbnails");
+        String contentImageUrl = s3Uploader.upload(contentImage, "trendposts/content");
+
         TrendPost post = TrendPost.builder()
                 .title(request.getTitle())
-                .thumbnailUrl(request.getThumbnailUrl())
-                .contentImageUrl(request.getContentImageUrl())
+                .thumbnailUrl(thumbnailUrl)
+                .contentImageUrl(contentImageUrl)
                 .adminId(adminId)
                 .build();
 
         return TrendPostDetailResponse.from(repository.save(post));
     }
 
-    // 2. Admin -> Trendpost 수정
-
+    // 2. Admin -> 수정 (이미지 선택적 변경)
     @Override
     @Transactional
-    public TrendPostDetailResponse update(Long id, TrendPostRequest request, Long adminId) {
+    public TrendPostDetailResponse update(Long id, TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
         TrendPost post = repository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
@@ -50,13 +53,21 @@ public class TrendPostServiceImpl implements TrendPostService {
         }
 
         post.setTitle(request.getTitle());
-        post.setThumbnailUrl(request.getThumbnailUrl());
-        post.setContentImageUrl(request.getContentImageUrl());
+
+        if (thumbnail != null && !thumbnail.isEmpty()) {
+            String thumbnailUrl = s3Uploader.upload(thumbnail, "trendposts/thumbnails");
+            post.setThumbnailUrl(thumbnailUrl);
+        }
+
+        if (contentImage != null && !contentImage.isEmpty()) {
+            String contentImageUrl = s3Uploader.upload(contentImage, "trendposts/content");
+            post.setContentImageUrl(contentImageUrl);
+        }
 
         return TrendPostDetailResponse.from(post);
     }
 
-    // 3. Admin -> Trendpost 삭제
+    // 3. Admin -> 삭제
     @Override
     @Transactional
     public void delete(Long id, Long adminId) {
@@ -70,7 +81,7 @@ public class TrendPostServiceImpl implements TrendPostService {
         repository.delete(post);
     }
 
-    // 5. ALL -> 전체 트렌드 포스트 목록 조회
+    // 4. 전체 목록
     @Override
     public TrendPostPagedResponse getAllPaged(int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -83,8 +94,7 @@ public class TrendPostServiceImpl implements TrendPostService {
         return new TrendPostPagedResponse(items, page, size, paged.getTotalElements());
     }
 
-
-    // 6. ALL -> 상세 조회
+    // 5. 단건 조회
     @Override
     public TrendPostDetailResponse getById(Long id) {
         TrendPost post = repository.findById(id)

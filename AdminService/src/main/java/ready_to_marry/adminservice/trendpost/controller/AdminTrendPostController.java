@@ -1,7 +1,9 @@
 package ready_to_marry.adminservice.trendpost.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.dto.ApiResponse;
 import ready_to_marry.adminservice.trendpost.dto.request.TrendPostRequest;
 import ready_to_marry.adminservice.trendpost.dto.response.TrendPostDetailResponse;
@@ -14,19 +16,23 @@ public class AdminTrendPostController {
 
     private final TrendPostService service;
 
-    // 1. TrendPost 등록
-    @PostMapping
-    public ApiResponse<TrendPostDetailResponse> create(@RequestBody TrendPostRequest request,
+    // 1. TrendPost 등록 (with 이미지 업로드)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<TrendPostDetailResponse> create(@RequestPart("request") TrendPostRequest request,
+                                                       @RequestPart("thumbnail") MultipartFile thumbnail,
+                                                       @RequestPart("contentImage") MultipartFile contentImage,
                                                        @RequestHeader("X-ADMIN-ID") Long adminId) {
-        return ApiResponse.success(service.create(request, adminId));
+        return ApiResponse.success(service.create(request, thumbnail, contentImage, adminId));
     }
 
-    // 2. TrendPost 수정
-    @PatchMapping("/{id}")
+    // 2. TrendPost 수정 (with 이미지 업로드)
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<TrendPostDetailResponse> update(@PathVariable Long id,
-                                                       @RequestBody TrendPostRequest request,
+                                                       @RequestPart("request") TrendPostRequest request,
+                                                       @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+                                                       @RequestPart(value = "contentImage", required = false) MultipartFile contentImage,
                                                        @RequestHeader("X-ADMIN-ID") Long adminId) {
-        return ApiResponse.success(service.update(id, request, adminId));
+        return ApiResponse.success(service.update(id, request, thumbnail, contentImage, adminId));
     }
 
     // 3. TrendPost 삭제
