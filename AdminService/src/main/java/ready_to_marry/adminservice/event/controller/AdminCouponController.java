@@ -26,15 +26,17 @@ public class AdminCouponController {
     // 2. 쿠폰 수정
     @PatchMapping("/{couponId}")
     public ApiResponse<Void> updateCoupon(@PathVariable Long couponId,
-                                          @RequestBody CouponRequest request) {
-        couponService.updateCoupon(couponId, request);  // void 리턴
-        return ApiResponse.success(null);               // null 반환
+                                          @RequestBody CouponRequest request,
+                                          @RequestHeader("X-ADMIN-ID") Long adminId) {
+        couponService.updateCoupon(couponId, request, adminId);
+        return ApiResponse.success(null);
     }
 
     // 3. 쿠폰 삭제
     @DeleteMapping("/{couponId}")
-    public ApiResponse<Void> deleteCoupon(@PathVariable Long couponId) {
-        couponService.deleteCoupon(couponId);
+    public ApiResponse<Void> deleteCoupon(@PathVariable Long couponId,
+                                          @RequestHeader("X-ADMIN-ID") Long adminId) {
+        couponService.deleteCoupon(couponId, adminId);
         return ApiResponse.success(null);
     }
 
