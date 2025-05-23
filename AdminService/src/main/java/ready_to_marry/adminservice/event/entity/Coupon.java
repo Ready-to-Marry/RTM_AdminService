@@ -48,7 +48,11 @@ public class Coupon {
     @Column(nullable = false)
     private LocalDateTime availableUntil; // 사용 가능 마감일
 
-    public static Coupon from(ready_to_marry.adminservice.event.dto.request.CouponRequest request) {
+    @Column(nullable = false, updatable = false)
+    private Long adminId;
+
+
+    public static Coupon from(CouponRequest request, Long adminId) {
         return Coupon.builder()
                 .title(request.getTitle())
                 .discountType(request.getDiscountType())
@@ -60,6 +64,7 @@ public class Coupon {
                 .issuedUntil(request.getIssuedUntil())
                 .availableFrom(request.getAvailableFrom())
                 .availableUntil(request.getAvailableUntil())
+                .adminId(adminId)
                 .build();
     }
 
