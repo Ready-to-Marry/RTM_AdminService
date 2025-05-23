@@ -11,6 +11,7 @@ import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import ready_to_marry.adminservice.common.dto.ApiResponse;
 import ready_to_marry.adminservice.common.dto.ErrorDetail;
 
@@ -38,7 +39,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
             ConstraintViolationException.class,
-            MethodArgumentTypeMismatchException.class
+            MethodArgumentTypeMismatchException.class,
+            MissingServletRequestPartException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleValidation(Exception ex) {
         List<ErrorDetail> errors = new ArrayList<>();
@@ -61,6 +63,11 @@ public class GlobalExceptionHandler {
             errors.add(ErrorDetail.builder()
                     .field(mtm.getName())
                     .message("Parameter must be of type " + mtm.getRequiredType().getSimpleName())
+                    .build());
+        } else if (ex instanceof MissingServletRequestPartException msrp) {
+            errors.add(ErrorDetail.builder()
+                    .field(msrp.getRequestPartName())
+                    .message("Required request part '" + msrp.getRequestPartName() + "' is not present")
                     .build());
         }
 
