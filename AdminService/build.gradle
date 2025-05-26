@@ -46,6 +46,9 @@ dependencies {
 
     // eureka client
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.547' // 최신 버전 확인
+
 }
 
 tasks.named('test') {
