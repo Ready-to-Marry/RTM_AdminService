@@ -31,13 +31,13 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void createEvent(EventCreateRequest request, MultipartFile image, Long adminId) {
-        String imageUrl = s3Uploader.upload(image, "events");
         Long targetId = request.getTargetId();
 
+        // 1) 먼저 이벤트 저장 (이미지 제외)
         Event event = Event.builder()
                 .linkType(request.getLinkType())
                 .title(request.getTitle())
-                .thumbnailImageUrl(imageUrl)
+                .thumbnailImageUrl("") // 이미지 추후 설정
                 .linkUrl("") // 추후 설정
                 .targetId(targetId)
                 .startDate(request.getStartDate())
@@ -46,10 +46,18 @@ public class EventServiceImpl implements EventService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        eventRepository.save(event);
+        eventRepository.save(event); // ID 생성
+
+        // 2) 이미지 업로드
+        Long eventId = event.getEventId();
+        String imageKey = String.format("admin/events/event-%d.jpg", eventId);
+        String imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+
+        // 3) 이미지 URL, 링크 설정
+        event.setThumbnailImageUrl(imageUrl);
 
         String linkUrl = (request.getLinkType() == LinkType.CE)
-                ? "/events/" + event.getEventId()
+                ? "/events/" + eventId
                 : "/catalog-service/items/" + targetId + "/details";
 
         event.setLinkUrl(linkUrl);
@@ -67,8 +75,14 @@ public class EventServiceImpl implements EventService {
             throw new IllegalStateException("linkType 또는 targetId는 수정할 수 없습니다. 삭제 후 다시 등록해주세요.");
         }
 
-        String imageUrl = (image != null) ? s3Uploader.upload(image, "events") : event.getThumbnailImageUrl();
+        // 1) 이미지가 있으면 새로 업로드
+        String imageUrl = event.getThumbnailImageUrl();
+        if (image != null && !image.isEmpty()) {
+            String imageKey = String.format("admin/events/event-%d.jpg", eventId);
+            imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+        }
 
+        // 2) 필드 갱신
         event.setTitle(request.getTitle());
         event.setStartDate(request.getStartDate());
         event.setEndDate(request.getEndDate());
@@ -82,6 +96,10 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
         eventRepository.delete(event);
+
+        // 이미지도 삭제할 경우
+        // String imageKey = String.format("admin/events/event-%d.jpg", eventId);
+        // s3Uploader.delete(imageKey);
     }
 
     // 4. 상세 조회
