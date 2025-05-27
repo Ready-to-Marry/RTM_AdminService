@@ -15,10 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventUpdateRequest {
-    private LinkType linkType;
     private String title;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-
-    private Long targetId; // 상품 특가(SD)일 경우 itemId, 쿠폰(CE)일 경우 couponId
 }

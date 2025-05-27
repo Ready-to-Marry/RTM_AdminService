@@ -70,23 +70,28 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
 
-        if (!event.getLinkType().equals(request.getLinkType()) ||
-                !event.getTargetId().equals(request.getTargetId())) {
-            throw new IllegalStateException("linkType 또는 targetId는 수정할 수 없습니다. 삭제 후 다시 등록해주세요.");
-        }
 
         // 1) 이미지가 있으면 새로 업로드
-        String imageUrl = event.getThumbnailImageUrl();
         if (image != null && !image.isEmpty()) {
             String imageKey = String.format("admin/events/event-%d.jpg", eventId);
-            imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+            String imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+            event.setThumbnailImageUrl(imageUrl);
         }
 
         // 2) 필드 갱신
-        event.setTitle(request.getTitle());
-        event.setStartDate(request.getStartDate());
-        event.setEndDate(request.getEndDate());
-        event.setThumbnailImageUrl(imageUrl);
+        String title = request.getTitle();
+        LocalDateTime startDate = request.getStartDate();
+        LocalDateTime endDate = request.getEndDate();
+
+        if (title != null && !title.isEmpty()) {
+            event.setTitle(title);
+        }
+        if (startDate != null) {
+            event.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            event.setEndDate(endDate);
+        }
     }
 
     // 3. 이벤트 삭제
