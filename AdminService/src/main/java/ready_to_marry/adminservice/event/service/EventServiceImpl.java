@@ -27,7 +27,7 @@ public class EventServiceImpl implements EventService {
     private final S3Uploader s3Uploader;
     private final CouponService couponService;
 
-    // 1. 이벤트 등록
+    // 1. Admin -> 이벤트 등록
     @Override
     @Transactional
     public void createEvent(EventCreateRequest request, MultipartFile image, Long adminId) {
@@ -63,30 +63,35 @@ public class EventServiceImpl implements EventService {
         event.setLinkUrl(linkUrl);
     }
 
-    // 2. 이벤트 수정
+    // 2. Admin -> 이벤트 수정
     @Override
     @Transactional
     public void updateEvent(Long eventId, EventUpdateRequest request, MultipartFile image, Long adminId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
 
-        if (!event.getLinkType().equals(request.getLinkType()) ||
-                !event.getTargetId().equals(request.getTargetId())) {
-            throw new IllegalStateException("linkType 또는 targetId는 수정할 수 없습니다. 삭제 후 다시 등록해주세요.");
-        }
 
         // 1) 이미지가 있으면 새로 업로드
-        String imageUrl = event.getThumbnailImageUrl();
         if (image != null && !image.isEmpty()) {
             String imageKey = String.format("admin/events/event-%d.jpg", eventId);
-            imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+            String imageUrl = s3Uploader.uploadWithKey(image, imageKey);
+            event.setThumbnailImageUrl(imageUrl);
         }
 
         // 2) 필드 갱신
-        event.setTitle(request.getTitle());
-        event.setStartDate(request.getStartDate());
-        event.setEndDate(request.getEndDate());
-        event.setThumbnailImageUrl(imageUrl);
+        String title = request.getTitle();
+        LocalDateTime startDate = request.getStartDate();
+        LocalDateTime endDate = request.getEndDate();
+
+        if (title != null && !title.isEmpty()) {
+            event.setTitle(title);
+        }
+        if (startDate != null) {
+            event.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            event.setEndDate(endDate);
+        }
     }
 
     // 3. 이벤트 삭제
@@ -102,7 +107,7 @@ public class EventServiceImpl implements EventService {
         // s3Uploader.delete(imageKey);
     }
 
-    // 4. 상세 조회
+    // 4. User -> 이벤트 조회 -> 상세 조회
     @Override
     public EventDetailResponse getEventDetail(Long eventId) {
         Event event = eventRepository.findById(eventId)
@@ -116,7 +121,7 @@ public class EventServiceImpl implements EventService {
         throw new IllegalStateException("쿠폰 이벤트가 아닌 이벤트는 상세 정보를 제공하지 않습니다.");
     }
 
-    // 5. 전체 이벤트 목록 조회 (페이징)
+    // 5. User -> 전체 이벤트 목록 조회
     @Override
     public EventPagedResponse getPagedEvents(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -132,5 +137,14 @@ public class EventServiceImpl implements EventService {
                 .size(result.getSize())
                 .total((int) result.getTotalElements())
                 .build();
+    }
+
+    // 6. Admin → 전체 이벤트 목록 조회
+    @Override
+    public List<AdminEventResponse> getAdminEventList() {
+        return eventRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(AdminEventResponse::from)
+                .collect(Collectors.toList());
     }
 }

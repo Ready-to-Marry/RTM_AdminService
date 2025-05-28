@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class CouponDetailResponse {
+    // Admin -> 쿠폰 이벤트 관리 -> 상세 조회
     private Long couponId;
     private String title;
     private String discountType;

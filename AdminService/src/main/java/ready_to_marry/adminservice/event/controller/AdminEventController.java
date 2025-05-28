@@ -6,7 +6,10 @@ import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.dto.ApiResponse;
 import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
+import ready_to_marry.adminservice.event.dto.response.AdminEventResponse;
 import ready_to_marry.adminservice.event.service.EventService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/events/admin")
@@ -42,4 +45,9 @@ public class AdminEventController {
         return ApiResponse.success(null);
     }
 
+    // 4. Admin -> 전체 이벤트 목록 조회
+    @GetMapping
+    public ApiResponse<List<AdminEventResponse>> getAllAdminEvents() {
+        return ApiResponse.success(service.getAdminEventList());
+    }
 }
