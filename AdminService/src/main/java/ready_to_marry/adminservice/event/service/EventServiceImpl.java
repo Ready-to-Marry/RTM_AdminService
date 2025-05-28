@@ -27,7 +27,7 @@ public class EventServiceImpl implements EventService {
     private final S3Uploader s3Uploader;
     private final CouponService couponService;
 
-    // 1. 이벤트 등록
+    // 1. Admin -> 이벤트 등록
     @Override
     @Transactional
     public void createEvent(EventCreateRequest request, MultipartFile image, Long adminId) {
@@ -63,7 +63,7 @@ public class EventServiceImpl implements EventService {
         event.setLinkUrl(linkUrl);
     }
 
-    // 2. 이벤트 수정
+    // 2. Admin -> 이벤트 수정
     @Override
     @Transactional
     public void updateEvent(Long eventId, EventUpdateRequest request, MultipartFile image, Long adminId) {
@@ -107,7 +107,7 @@ public class EventServiceImpl implements EventService {
         // s3Uploader.delete(imageKey);
     }
 
-    // 4. 상세 조회
+    // 4. User -> 이벤트 조회 -> 상세 조회
     @Override
     public EventDetailResponse getEventDetail(Long eventId) {
         Event event = eventRepository.findById(eventId)
@@ -121,7 +121,7 @@ public class EventServiceImpl implements EventService {
         throw new IllegalStateException("쿠폰 이벤트가 아닌 이벤트는 상세 정보를 제공하지 않습니다.");
     }
 
-    // 5. 전체 이벤트 목록 조회 (페이징)
+    // 5. User -> 전체 이벤트 목록 조회
     @Override
     public EventPagedResponse getPagedEvents(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -137,5 +137,14 @@ public class EventServiceImpl implements EventService {
                 .size(result.getSize())
                 .total((int) result.getTotalElements())
                 .build();
+    }
+
+    // 6. Admin → 전체 이벤트 목록 조회
+    @Override
+    public List<AdminEventResponse> getAdminEventList() {
+        return eventRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(AdminEventResponse::from)
+                .collect(Collectors.toList());
     }
 }
