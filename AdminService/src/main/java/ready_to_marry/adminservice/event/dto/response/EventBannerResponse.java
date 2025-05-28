@@ -7,6 +7,7 @@ import ready_to_marry.adminservice.event.entity.Event;
 @Getter
 @Builder
 public class EventBannerResponse {
+    // User -> 메인 베너 조회
     private Long eventId;
     private String thumbnailImageUrl;
     private String linkUrl;

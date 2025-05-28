@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class EventDetailResponse {
-
+    // User -> 쿠폰 이벤트 클릭 -> 쿠폰 이벤트 상세 조회
     // 쿠폰 정보
     private Long couponId;
     private String title;

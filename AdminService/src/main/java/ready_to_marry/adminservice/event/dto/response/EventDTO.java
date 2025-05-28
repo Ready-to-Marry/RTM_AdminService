@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class EventDTO {
+    // User -> 이벤트 목록 조회
     private Long eventId;
     private String title;
     private String thumbnailImageUrl;
