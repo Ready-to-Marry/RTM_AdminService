@@ -22,7 +22,7 @@ public class AdminEventController {
     @PostMapping
     public ApiResponse<Void> createEvent(@RequestPart("eventRequest") EventCreateRequest request,
                                          @RequestPart("image") MultipartFile image,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.createEvent(request, image, adminId);
         return ApiResponse.success(null);
     }
@@ -32,7 +32,7 @@ public class AdminEventController {
     public ApiResponse<Void> updateEvent(@PathVariable Long id,
                                          @RequestPart("eventRequest") EventUpdateRequest request,
                                          @RequestPart(value = "image", required = false) MultipartFile image,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.updateEvent(id, request, image, adminId);
         return ApiResponse.success(null);
     }
@@ -40,7 +40,7 @@ public class AdminEventController {
     // 3. Admin -> 이벤트 삭제
     @DeleteMapping("/{eventId}")
     public ApiResponse<Void> deleteEvent(@PathVariable Long eventId,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.deleteEvent(eventId, adminId);
         return ApiResponse.success(null);
     }
