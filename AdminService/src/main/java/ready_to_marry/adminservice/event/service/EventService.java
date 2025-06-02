@@ -5,6 +5,8 @@ import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
 import ready_to_marry.adminservice.event.dto.response.*;
 
+import java.util.List;
+
 public interface EventService {
 
     // 1. 이벤트 등록
@@ -21,4 +23,7 @@ public interface EventService {
 
     // 5. 전체 이벤트 목록 페이징 조회
     EventPagedResponse getPagedEvents(int page, int size);
+
+    // 6. Admin → 전체 이벤트 목록 조회
+    List<AdminEventResponse> getAdminEventList();
 }

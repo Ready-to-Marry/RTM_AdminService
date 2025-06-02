@@ -6,7 +6,10 @@ import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.dto.ApiResponse;
 import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
+import ready_to_marry.adminservice.event.dto.response.AdminEventResponse;
 import ready_to_marry.adminservice.event.service.EventService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/events/admin")
@@ -19,7 +22,7 @@ public class AdminEventController {
     @PostMapping
     public ApiResponse<Void> createEvent(@RequestPart("eventRequest") EventCreateRequest request,
                                          @RequestPart("image") MultipartFile image,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.createEvent(request, image, adminId);
         return ApiResponse.success(null);
     }
@@ -29,7 +32,7 @@ public class AdminEventController {
     public ApiResponse<Void> updateEvent(@PathVariable Long id,
                                          @RequestPart("eventRequest") EventUpdateRequest request,
                                          @RequestPart(value = "image", required = false) MultipartFile image,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.updateEvent(id, request, image, adminId);
         return ApiResponse.success(null);
     }
@@ -37,9 +40,14 @@ public class AdminEventController {
     // 3. Admin -> 이벤트 삭제
     @DeleteMapping("/{eventId}")
     public ApiResponse<Void> deleteEvent(@PathVariable Long eventId,
-                                         @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                         @RequestHeader("X-Admin-Id") Long adminId) {
         service.deleteEvent(eventId, adminId);
         return ApiResponse.success(null);
     }
 
+    // 4. Admin -> 전체 이벤트 목록 조회
+    @GetMapping
+    public ApiResponse<List<AdminEventResponse>> getAllAdminEvents() {
+        return ApiResponse.success(service.getAdminEventList());
+    }
 }

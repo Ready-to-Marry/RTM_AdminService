@@ -25,28 +25,34 @@ public class TrendPostServiceImpl implements TrendPostService {
     private final TrendPostRepository repository;
     private final S3Uploader s3Uploader;
 
-    // 1. Admin -> 등록
+    // 1. Admin → 등록
     @Override
     @Transactional
     public TrendPostDetailResponse create(TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
-        try {
-            String thumbnailUrl = s3Uploader.upload(thumbnail, "trendposts/thumbnails");
-            String contentImageUrl = s3Uploader.upload(contentImage, "trendposts/content");
+        // 1) 먼저 저장 (이미지 제외)
+        TrendPost post = TrendPost.builder()
+                .title(request.getTitle())
+                .adminId(adminId)
+                .build();
+        repository.save(post); // postId 생성
 
-            TrendPost post = TrendPost.builder()
-                    .title(request.getTitle())
-                    .thumbnailUrl(thumbnailUrl)
-                    .contentImageUrl(contentImageUrl)
-                    .adminId(adminId)
-                    .build();
+        Long postId = post.getTrendPostId();
 
-            return TrendPostDetailResponse.from(repository.save(post));
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
-        }
+        // 2) S3 업로드 (postId 포함한 고유 키)
+        String thumbnailKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", postId);
+        String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", postId);
+
+        String thumbnailUrl = s3Uploader.uploadWithKey(thumbnail, thumbnailKey);
+        String contentImageUrl = s3Uploader.uploadWithKey(contentImage, contentKey);
+
+        // 3) 이미지 URL 저장
+        post.setThumbnailUrl(thumbnailUrl);
+        post.setContentImageUrl(contentImageUrl);
+
+        return TrendPostDetailResponse.from(post);
     }
 
-    // 2. Admin -> 수정 (이미지 선택적 변경)
+    // 2. Admin → 수정 (이미지 선택적 변경)
     @Override
     @Transactional
     public TrendPostDetailResponse update(Long id, TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
@@ -76,9 +82,25 @@ public class TrendPostServiceImpl implements TrendPostService {
         } catch (Exception e) {
             throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
+
+        post.setTitle(request.getTitle());
+
+        if (thumbnail != null && !thumbnail.isEmpty()) {
+            String thumbnailKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", id);
+            String thumbnailUrl = s3Uploader.uploadWithKey(thumbnail, thumbnailKey);
+            post.setThumbnailUrl(thumbnailUrl);
+        }
+
+        if (contentImage != null && !contentImage.isEmpty()) {
+            String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", id);
+            String contentImageUrl = s3Uploader.uploadWithKey(contentImage, contentKey);
+            post.setContentImageUrl(contentImageUrl);
+        }
+
+        return TrendPostDetailResponse.from(post);
     }
 
-    // 3. Admin -> 삭제
+    // 3. Admin → 삭제
     @Override
     @Transactional
     public void delete(Long id, Long adminId) {
@@ -96,9 +118,17 @@ public class TrendPostServiceImpl implements TrendPostService {
         } catch (Exception e) {
             throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
+
+//        //S3 이미지 삭제 로직 추가 가능
+//        String thumbKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", id);
+//        String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", id);
+//        // \\s3Uploader.delete(thumbKey);
+//        // s3Uploader.delete(contentKey);
+
+        repository.delete(post);
     }
 
-    // 4. 전체 목록
+    // 4. 전체 목록 조회
     @Override
     public TrendPostPagedResponse getAllPaged(int page, int size) {
         try {
