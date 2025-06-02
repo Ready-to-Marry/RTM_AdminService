@@ -38,6 +38,7 @@ public class MainBannerController {
     @DeleteMapping("/admin/{mainBannerId}")
     public ApiResponse<Void> delete(@PathVariable Long mainBannerId,
                                     @RequestHeader("X-Admin-Id") Long adminId) {
+        System.out.println(adminId);
         service.delete(mainBannerId, adminId);
         return ApiResponse.success(null);
     }
