@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ready_to_marry.adminservice.common.exception.NotFoundException;
+import ready_to_marry.adminservice.common.exception.*;
 import ready_to_marry.adminservice.common.util.S3Uploader;
 import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
@@ -110,33 +110,44 @@ public class EventServiceImpl implements EventService {
     // 4. User -> 이벤트 조회 -> 상세 조회
     @Override
     public EventDetailResponse getEventDetail(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
+        try {
+            Event event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
 
-        if (event.getLinkType() == LinkType.CE) {
-            Coupon coupon = couponService.getCouponEntity(event.getTargetId());
-            return EventDetailResponse.from(coupon, event);
+            if (event.getLinkType() == LinkType.CE) {
+                Coupon coupon = couponService.getCouponEntity(event.getTargetId());
+                return EventDetailResponse.from(coupon, event);
+            }
+
+            // 상품 특가(SD)는 자체 상세 정보는 없고, 링크만 존재하므로 null 반환
+            return null;
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
         }
-
-        throw new IllegalStateException("쿠폰 이벤트가 아닌 이벤트는 상세 정보를 제공하지 않습니다.");
     }
 
     // 5. User -> 전체 이벤트 목록 조회
     @Override
     public EventPagedResponse getPagedEvents(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Event> result = eventRepository.findAll(pageable);
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<Event> result = eventRepository.findAll(pageable);
 
-        List<EventDTO> items = result.getContent().stream()
-                .map(EventDTO::from)
-                .collect(Collectors.toList());
+            List<EventDTO> items = result.getContent().stream()
+                    .map(EventDTO::from)
+                    .collect(Collectors.toList());
 
-        return EventPagedResponse.builder()
-                .items(items)
-                .page(result.getNumber())
-                .size(result.getSize())
-                .total((int) result.getTotalElements())
-                .build();
+            return EventPagedResponse.builder()
+                    .items(items)
+                    .page(result.getNumber())
+                    .size(result.getSize())
+                    .total((int) result.getTotalElements())
+                    .build();
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
 
     // 6. Admin → 전체 이벤트 목록 조회

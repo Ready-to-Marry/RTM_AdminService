@@ -45,10 +45,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // eureka client
+
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     implementation 'com.amazonaws:aws-java-sdk-s3:1.12.547' // 최신 버전 확인
 
+    // Bean Validation (Jakarta)
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
 }
 
 tasks.named('test') {
