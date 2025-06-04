@@ -11,4 +11,5 @@ public class InfrastructureException extends RuntimeException {
         super(message);
         this.code = code;
     }
+
 }

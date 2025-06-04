@@ -2,10 +2,11 @@ package ready_to_marry.adminservice.event.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ready_to_marry.adminservice.common.exception.*;
+import ready_to_marry.adminservice.common.exception.NotFoundException;
 import ready_to_marry.adminservice.common.util.S3Uploader;
 import ready_to_marry.adminservice.event.dto.request.EventCreateRequest;
 import ready_to_marry.adminservice.event.dto.request.EventUpdateRequest;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
@@ -31,14 +33,16 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void createEvent(EventCreateRequest request, MultipartFile image, Long adminId) {
+        log.info("[이벤트 등록] 요청 - adminId={}, title={}, linkType={}, targetId={}",
+                adminId, request.getTitle(), request.getLinkType(), request.getTargetId());
+
         Long targetId = request.getTargetId();
 
-        // 1) 먼저 이벤트 저장 (이미지 제외)
         Event event = Event.builder()
                 .linkType(request.getLinkType())
                 .title(request.getTitle())
-                .thumbnailImageUrl("") // 이미지 추후 설정
-                .linkUrl("") // 추후 설정
+                .thumbnailImageUrl("")
+                .linkUrl("")
                 .targetId(targetId)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
@@ -46,14 +50,12 @@ public class EventServiceImpl implements EventService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        eventRepository.save(event); // ID 생성
+        eventRepository.save(event);
 
-        // 2) 이미지 업로드
         Long eventId = event.getEventId();
         String imageKey = String.format("admin/events/event-%d.jpg", eventId);
         String imageUrl = s3Uploader.uploadWithKey(image, imageKey);
 
-        // 3) 이미지 URL, 링크 설정
         event.setThumbnailImageUrl(imageUrl);
 
         String linkUrl = (request.getLinkType() == LinkType.CE)
@@ -61,101 +63,116 @@ public class EventServiceImpl implements EventService {
                 : "/catalog-service/items/" + targetId + "/details";
 
         event.setLinkUrl(linkUrl);
+
+        log.info("[이벤트 등록 완료] eventId={}, linkUrl={}, imageUrl={}",
+                eventId, linkUrl, imageUrl);
     }
 
     // 2. Admin -> 이벤트 수정
     @Override
     @Transactional
     public void updateEvent(Long eventId, EventUpdateRequest request, MultipartFile image, Long adminId) {
+        log.info("[이벤트 수정] 요청 - eventId={}, adminId={}, newTitle={}",
+                eventId, adminId, request.getTitle());
+
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
+                .orElseThrow(() -> {
+                    log.warn("[이벤트 수정 실패] 존재하지 않음 - eventId={}", eventId);
+                    return new NotFoundException("이벤트를 찾을 수 없습니다.");
+                });
 
-
-        // 1) 이미지가 있으면 새로 업로드
         if (image != null && !image.isEmpty()) {
             String imageKey = String.format("admin/events/event-%d.jpg", eventId);
             String imageUrl = s3Uploader.uploadWithKey(image, imageKey);
             event.setThumbnailImageUrl(imageUrl);
+            log.info("[이벤트 수정] 썸네일 이미지 업데이트 - eventId={}, imageUrl={}", eventId, imageUrl);
         }
 
-        // 2) 필드 갱신
-        String title = request.getTitle();
-        LocalDateTime startDate = request.getStartDate();
-        LocalDateTime endDate = request.getEndDate();
+        if (request.getTitle() != null && !request.getTitle().isEmpty()) {
+            event.setTitle(request.getTitle());
+        }
+        if (request.getStartDate() != null) {
+            event.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            event.setEndDate(request.getEndDate());
+        }
 
-        if (title != null && !title.isEmpty()) {
-            event.setTitle(title);
-        }
-        if (startDate != null) {
-            event.setStartDate(startDate);
-        }
-        if (endDate != null) {
-            event.setEndDate(endDate);
-        }
+        log.info("[이벤트 수정 완료] eventId={}, updatedTitle={}", eventId, event.getTitle());
     }
 
     // 3. 이벤트 삭제
     @Override
     @Transactional
     public void deleteEvent(Long eventId, Long adminId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
-        eventRepository.delete(event);
+        log.info("[이벤트 삭제] 요청 - eventId={}, adminId={}", eventId, adminId);
 
-        // 이미지도 삭제할 경우
-        // String imageKey = String.format("admin/events/event-%d.jpg", eventId);
-        // s3Uploader.delete(imageKey);
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> {
+                    log.warn("[이벤트 삭제 실패] 존재하지 않음 - eventId={}", eventId);
+                    return new NotFoundException("이벤트를 찾을 수 없습니다.");
+                });
+
+        eventRepository.delete(event);
+        log.info("[이벤트 삭제 완료] eventId={}", eventId);
+
+        // S3 이미지 삭제 로직이 필요한 경우 추가 가능
     }
 
-    // 4. User -> 이벤트 조회 -> 상세 조회
+    // 4. User -> 이벤트 상세 조회
     @Override
     public EventDetailResponse getEventDetail(Long eventId) {
-        try {
-            Event event = eventRepository.findById(eventId)
-                    .orElseThrow(() -> new NotFoundException("이벤트를 찾을 수 없습니다."));
+        log.debug("[이벤트 상세 조회] 요청 - eventId={}", eventId);
 
-            if (event.getLinkType() == LinkType.CE) {
-                Coupon coupon = couponService.getCouponEntity(event.getTargetId());
-                return EventDetailResponse.from(coupon, event);
-            }
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> {
+                    log.warn("[이벤트 상세 조회 실패] 존재하지 않음 - eventId={}", eventId);
+                    return new NotFoundException("이벤트를 찾을 수 없습니다.");
+                });
 
-            // 상품 특가(SD)는 자체 상세 정보는 없고, 링크만 존재하므로 null 반환
-            return null;
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        if (event.getLinkType() == LinkType.CE) {
+            Coupon coupon = couponService.getCouponEntity(event.getTargetId());
+            log.info("[이벤트 상세 조회 완료] 쿠폰 이벤트 - eventId={}, couponId={}",
+                    eventId, coupon.getCouponId());
+            return EventDetailResponse.from(coupon, event);
         }
+
+        log.warn("[이벤트 상세 조회 실패] 쿠폰 이벤트 아님 - eventId={}, linkType={}",
+                eventId, event.getLinkType());
+        throw new IllegalStateException("쿠폰 이벤트가 아닌 이벤트는 상세 정보를 제공하지 않습니다.");
     }
 
     // 5. User -> 전체 이벤트 목록 조회
     @Override
     public EventPagedResponse getPagedEvents(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<Event> result = eventRepository.findAll(pageable);
+        log.debug("[이벤트 목록 조회] 요청 - page={}, size={}", page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Event> result = eventRepository.findAll(pageable);
 
-            List<EventDTO> items = result.getContent().stream()
-                    .map(EventDTO::from)
-                    .collect(Collectors.toList());
+        List<EventDTO> items = result.getContent().stream()
+                .map(EventDTO::from)
+                .collect(Collectors.toList());
 
-            return EventPagedResponse.builder()
-                    .items(items)
-                    .page(result.getNumber())
-                    .size(result.getSize())
-                    .total((int) result.getTotalElements())
-                    .build();
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
-        }
+        log.info("[이벤트 목록 조회 완료] 총 {}건", result.getTotalElements());
+
+        return EventPagedResponse.builder()
+                .items(items)
+                .page(result.getNumber())
+                .size(result.getSize())
+                .total((int) result.getTotalElements())
+                .build();
     }
 
     // 6. Admin → 전체 이벤트 목록 조회
     @Override
     public List<AdminEventResponse> getAdminEventList() {
-        return eventRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+        log.debug("[이벤트 전체 조회 - 관리자] 요청");
+        List<AdminEventResponse> list = eventRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
                 .map(AdminEventResponse::from)
                 .collect(Collectors.toList());
+        log.info("[이벤트 전체 조회 완료 - 관리자] {}건 반환", list.size());
+        return list;
     }
 }
+
