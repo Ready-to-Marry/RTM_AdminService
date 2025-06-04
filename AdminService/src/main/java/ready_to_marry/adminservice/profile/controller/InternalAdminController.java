@@ -16,9 +16,9 @@ public class InternalAdminController {
 
     // 내부 서비스 간 통신용 API
     @PostMapping("/admin-id")
-    public ApiResponse<AdminIdResponse> getOrCreateAdminId(@RequestBody AdminProfileRequest request) {
+    public ApiResponse<Long> getOrCreateAdminId(@RequestBody AdminProfileRequest request) {
         Long adminId = internalAdminService.getOrCreateAdminId(request);
-        return ApiResponse.success(new AdminIdResponse(adminId));
+        return ApiResponse.success(adminId);
     }
 
 }
