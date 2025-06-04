@@ -17,7 +17,7 @@ public class AdminNoticeController {
     // 1. Admin -> 공지사항 등록
     @PostMapping
     public ApiResponse<NoticeDetailResponse> create(@RequestBody NoticeRequest request,
-                                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                                    @RequestHeader("X-Admin-Id") Long adminId) {
         return ApiResponse.success(service.create(request, adminId));
     }
 
@@ -25,14 +25,14 @@ public class AdminNoticeController {
     @PatchMapping("/{id}")
     public ApiResponse<NoticeDetailResponse> update(@PathVariable Long id,
                                                     @RequestBody NoticeRequest request,
-                                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                                    @RequestHeader("X-Admin-Id") Long adminId) {
         return ApiResponse.success(service.update(id, request, adminId));
     }
 
     // 3. Admin -> 공지사항 삭제
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id,
-                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                    @RequestHeader("X-Admin-Id") Long adminId) {
         service.delete(id, adminId);
         return ApiResponse.success(null);
     }

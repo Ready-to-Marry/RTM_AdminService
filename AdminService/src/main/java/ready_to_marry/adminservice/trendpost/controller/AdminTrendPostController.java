@@ -21,7 +21,7 @@ public class AdminTrendPostController {
     public ApiResponse<TrendPostDetailResponse> create(@RequestPart("request") TrendPostRequest request,
                                                        @RequestPart("thumbnail") MultipartFile thumbnail,
                                                        @RequestPart("contentImage") MultipartFile contentImage,
-                                                       @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                                       @RequestHeader("X-Admin-Id") Long adminId) {
         return ApiResponse.success(service.create(request, thumbnail, contentImage, adminId));
     }
 
@@ -31,14 +31,14 @@ public class AdminTrendPostController {
                                                        @RequestPart("request") TrendPostRequest request,
                                                        @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
                                                        @RequestPart(value = "contentImage", required = false) MultipartFile contentImage,
-                                                       @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                                       @RequestHeader("X-Admin-Id") Long adminId) {
         return ApiResponse.success(service.update(id, request, thumbnail, contentImage, adminId));
     }
 
     // 3. TrendPost 삭제
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id,
-                                    @RequestHeader("X-ADMIN-ID") Long adminId) {
+                                    @RequestHeader("X-Admin-Id") Long adminId) {
         service.delete(id, adminId);
         return ApiResponse.success(null);
     }
