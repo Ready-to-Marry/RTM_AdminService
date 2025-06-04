@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ready_to_marry.adminservice.common.exception.BusinessException;
 import ready_to_marry.adminservice.common.exception.ErrorCode;
+import ready_to_marry.adminservice.common.exception.InfrastructureException;
 import ready_to_marry.adminservice.notice.dto.request.NoticeRequest;
 import ready_to_marry.adminservice.notice.dto.response.NoticeDTO;
 import ready_to_marry.adminservice.notice.dto.response.NoticeDetailResponse;
@@ -27,78 +28,107 @@ public class NoticeServiceImpl implements NoticeService {
     // 1. 공지사항 전체 목록 조회 (페이징 없음, 기존 메서드)
     @Override
     public List<NoticeDTO> getAll() {
-        return repository.findAll().stream()
-                .map(NoticeDTO::from)
-                .collect(Collectors.toList());
+        try {
+            return repository.findAll().stream()
+                    .map(NoticeDTO::from)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
-
 
     // 2. 페이징 처리된 공지사항 목록 조회 추가
     @Override
     public NoticeListResponse getAllPaged(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Notice> noticePage = repository.findAll(pageable);
+        try {
+            Pageable pageable = PageRequest.of(page - 1, size);
+            Page<Notice> noticePage = repository.findAll(pageable);
 
-        List<NoticeDTO> items = noticePage.stream()
-                .map(NoticeDTO::from)
-                .collect(Collectors.toList());
+            List<NoticeDTO> items = noticePage.stream()
+                    .map(NoticeDTO::from)
+                    .collect(Collectors.toList());
 
-        return new NoticeListResponse(
-                items,
-                page,
-                size,
-                noticePage.getTotalElements()
-        );
+            return new NoticeListResponse(
+                    items,
+                    page,
+                    size,
+                    noticePage.getTotalElements()
+            );
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
 
     // 3. 공지사항 상세 조회
     @Override
     public NoticeDetailResponse getById(Long id) {
-        Notice notice = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
-        return NoticeDetailResponse.from(notice);
+        try {
+            Notice notice = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+            return NoticeDetailResponse.from(notice);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
 
     // 4. 공지사항 등록
     @Override
     @Transactional
     public NoticeDetailResponse create(NoticeRequest request, Long adminId) {
-        Notice saved = repository.save(Notice.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
-                .adminId(adminId)
-                .build());
-        return NoticeDetailResponse.from(saved);
+        try {
+            Notice saved = repository.save(Notice.builder()
+                    .title(request.getTitle())
+                    .content(request.getContent())
+                    .adminId(adminId)
+                    .build());
+            return NoticeDetailResponse.from(saved);
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
+        }
     }
 
     // 5. 공지사항 수정
     @Transactional
     @Override
     public NoticeDetailResponse update(Long id, NoticeRequest request, Long adminId) {
-        Notice notice = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        try {
+            Notice notice = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        if (!notice.getAdminId().equals(adminId)) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            if (!notice.getAdminId().equals(adminId)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            notice.setTitle(request.getTitle());
+            notice.setContent(request.getContent());
+
+            return NoticeDetailResponse.from(notice);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
-
-        notice.setTitle(request.getTitle());
-        notice.setContent(request.getContent());
-
-        return NoticeDetailResponse.from(notice);
     }
 
     // 6. 공지사항 삭제
     @Transactional
     @Override
     public void delete(Long id, Long adminId) {
-        Notice notice = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        try {
+            Notice notice = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        if (!notice.getAdminId().equals(adminId)) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            if (!notice.getAdminId().equals(adminId)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            repository.delete(notice);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
-
-        repository.delete(notice);
     }
 }

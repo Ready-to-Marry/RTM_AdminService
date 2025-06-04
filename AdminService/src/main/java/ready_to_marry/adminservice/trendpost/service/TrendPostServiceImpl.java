@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.exception.BusinessException;
 import ready_to_marry.adminservice.common.exception.ErrorCode;
+import ready_to_marry.adminservice.common.exception.InfrastructureException;
 import ready_to_marry.adminservice.trendpost.dto.request.TrendPostRequest;
 import ready_to_marry.adminservice.trendpost.dto.response.*;
 import ready_to_marry.adminservice.trendpost.entity.TrendPost;
@@ -55,11 +56,31 @@ public class TrendPostServiceImpl implements TrendPostService {
     @Override
     @Transactional
     public TrendPostDetailResponse update(Long id, TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
-        TrendPost post = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        try {
+            TrendPost post = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        if (!post.getAdminId().equals(adminId)) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            if (!post.getAdminId().equals(adminId)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            post.setTitle(request.getTitle());
+
+            if (thumbnail != null && !thumbnail.isEmpty()) {
+                String thumbnailUrl = s3Uploader.upload(thumbnail, "trendposts/thumbnails");
+                post.setThumbnailUrl(thumbnailUrl);
+            }
+
+            if (contentImage != null && !contentImage.isEmpty()) {
+                String contentImageUrl = s3Uploader.upload(contentImage, "trendposts/content");
+                post.setContentImageUrl(contentImageUrl);
+            }
+
+            return TrendPostDetailResponse.from(post);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
 
         post.setTitle(request.getTitle());
@@ -83,11 +104,19 @@ public class TrendPostServiceImpl implements TrendPostService {
     @Override
     @Transactional
     public void delete(Long id, Long adminId) {
-        TrendPost post = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        try {
+            TrendPost post = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        if (!post.getAdminId().equals(adminId)) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            if (!post.getAdminId().equals(adminId)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            repository.delete(post);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
 
 //        //S3 이미지 삭제 로직 추가 가능
@@ -102,22 +131,32 @@ public class TrendPostServiceImpl implements TrendPostService {
     // 4. 전체 목록 조회
     @Override
     public TrendPostPagedResponse getAllPaged(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<TrendPost> paged = repository.findAll(pageable);
+        try {
+            Pageable pageable = PageRequest.of(page - 1, size);
+            Page<TrendPost> paged = repository.findAll(pageable);
 
-        List<TrendPostDTO> items = paged.stream()
-                .map(TrendPostDTO::from)
-                .toList();
+            List<TrendPostDTO> items = paged.stream()
+                    .map(TrendPostDTO::from)
+                    .toList();
 
-        return new TrendPostPagedResponse(items, page, size, paged.getTotalElements());
+            return new TrendPostPagedResponse(items, page, size, paged.getTotalElements());
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
 
     // 5. 단건 조회
     @Override
     public TrendPostDetailResponse getById(Long id) {
-        TrendPost post = repository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        try {
+            TrendPost post = repository.findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        return TrendPostDetailResponse.from(post);
+            return TrendPostDetailResponse.from(post);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
     }
 }

@@ -1,4 +1,4 @@
-# 💻 UserService Overview
+# 💻 AdminService Overview
 
 # 1. 언어 및 프레임워크
 - Java 17
