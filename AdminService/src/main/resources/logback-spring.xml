@@ -24,7 +24,8 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <!-- 모든 로그 레벨 출력 (TRACE 이상) -->
+    <root level="TRACE">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
