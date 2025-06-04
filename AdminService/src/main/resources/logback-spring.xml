@@ -24,6 +24,13 @@
         </encoder>
     </appender>
 
+    <!-- notice 서비스만 DEBUG 이상 출력 -->
+    <logger name="ready_to_marry.adminservice.notice.service" level="DEBUG"/>
+
+    <!-- 공통 패키지 수준 로그를 WARN 이상으로 제한하고 싶다면 추가 -->
+    <!-- <logger name="org.springframework" level="WARN" /> -->
+
+    <!-- 전체 기본은 INFO 이상만 출력 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
