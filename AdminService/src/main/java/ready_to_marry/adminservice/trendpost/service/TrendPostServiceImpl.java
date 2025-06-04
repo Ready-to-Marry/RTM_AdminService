@@ -1,6 +1,7 @@
 package ready_to_marry.adminservice.trendpost.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ready_to_marry.adminservice.common.exception.BusinessException;
 import ready_to_marry.adminservice.common.exception.ErrorCode;
-import ready_to_marry.adminservice.common.exception.InfrastructureException;
 import ready_to_marry.adminservice.trendpost.dto.request.TrendPostRequest;
 import ready_to_marry.adminservice.trendpost.dto.response.*;
 import ready_to_marry.adminservice.trendpost.entity.TrendPost;
@@ -18,6 +18,7 @@ import ready_to_marry.adminservice.common.util.S3Uploader;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrendPostServiceImpl implements TrendPostService {
@@ -25,62 +26,46 @@ public class TrendPostServiceImpl implements TrendPostService {
     private final TrendPostRepository repository;
     private final S3Uploader s3Uploader;
 
-    // 1. Admin → 등록
     @Override
     @Transactional
     public TrendPostDetailResponse create(TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
-        // 1) 먼저 저장 (이미지 제외)
+        log.info("[트렌드포스트 생성] 요청 - adminId={}, title={}", adminId, request.getTitle());
+
         TrendPost post = TrendPost.builder()
                 .title(request.getTitle())
                 .adminId(adminId)
                 .build();
-        repository.save(post); // postId 생성
+        repository.save(post);
 
         Long postId = post.getTrendPostId();
 
-        // 2) S3 업로드 (postId 포함한 고유 키)
         String thumbnailKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", postId);
         String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", postId);
 
         String thumbnailUrl = s3Uploader.uploadWithKey(thumbnail, thumbnailKey);
         String contentImageUrl = s3Uploader.uploadWithKey(contentImage, contentKey);
 
-        // 3) 이미지 URL 저장
         post.setThumbnailUrl(thumbnailUrl);
         post.setContentImageUrl(contentImageUrl);
 
+        log.info("[트렌드포스트 생성 완료] postId={}, thumbnailUrl={}, contentImageUrl={}", postId, thumbnailUrl, contentImageUrl);
         return TrendPostDetailResponse.from(post);
     }
 
-    // 2. Admin → 수정 (이미지 선택적 변경)
     @Override
     @Transactional
     public TrendPostDetailResponse update(Long id, TrendPostRequest request, MultipartFile thumbnail, MultipartFile contentImage, Long adminId) {
-        try {
-            TrendPost post = repository.findById(id)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        log.info("[트렌드포스트 수정] 요청 - postId={}, adminId={}, newTitle={}", id, adminId, request.getTitle());
 
-            if (!post.getAdminId().equals(adminId)) {
-                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
-            }
+        TrendPost post = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("[트렌드포스트 수정 실패] 존재하지 않음 - postId={}", id);
+                    return new BusinessException(ErrorCode.NOT_FOUND);
+                });
 
-            post.setTitle(request.getTitle());
-
-            if (thumbnail != null && !thumbnail.isEmpty()) {
-                String thumbnailUrl = s3Uploader.upload(thumbnail, "trendposts/thumbnails");
-                post.setThumbnailUrl(thumbnailUrl);
-            }
-
-            if (contentImage != null && !contentImage.isEmpty()) {
-                String contentImageUrl = s3Uploader.upload(contentImage, "trendposts/content");
-                post.setContentImageUrl(contentImageUrl);
-            }
-
-            return TrendPostDetailResponse.from(post);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
+        if (!post.getAdminId().equals(adminId)) {
+            log.warn("[트렌드포스트 수정 실패] 권한 없음 - postId={}, adminId={}", id, adminId);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         post.setTitle(request.getTitle());
@@ -89,74 +74,61 @@ public class TrendPostServiceImpl implements TrendPostService {
             String thumbnailKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", id);
             String thumbnailUrl = s3Uploader.uploadWithKey(thumbnail, thumbnailKey);
             post.setThumbnailUrl(thumbnailUrl);
+            log.info("[트렌드포스트 수정] 썸네일 업데이트 - postId={}, thumbnailUrl={}", id, thumbnailUrl);
         }
 
         if (contentImage != null && !contentImage.isEmpty()) {
             String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", id);
             String contentImageUrl = s3Uploader.uploadWithKey(contentImage, contentKey);
             post.setContentImageUrl(contentImageUrl);
+            log.info("[트렌드포스트 수정] 본문 이미지 업데이트 - postId={}, contentImageUrl={}", id, contentImageUrl);
         }
 
         return TrendPostDetailResponse.from(post);
     }
 
-    // 3. Admin → 삭제
     @Override
     @Transactional
     public void delete(Long id, Long adminId) {
-        try {
-            TrendPost post = repository.findById(id)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        log.info("[트렌드포스트 삭제] 요청 - postId={}, adminId={}", id, adminId);
 
-            if (!post.getAdminId().equals(adminId)) {
-                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
-            }
+        TrendPost post = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("[트렌드포스트 삭제 실패] 존재하지 않음 - postId={}", id);
+                    return new BusinessException(ErrorCode.NOT_FOUND);
+                });
 
-            repository.delete(post);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
+        if (!post.getAdminId().equals(adminId)) {
+            log.warn("[트렌드포스트 삭제 실패] 권한 없음 - postId={}, adminId={}", id, adminId);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
-
-//        //S3 이미지 삭제 로직 추가 가능
-//        String thumbKey = String.format("admin/trendposts/thumbnails/post-%d.jpg", id);
-//        String contentKey = String.format("admin/trendposts/content/post-%d-content.jpg", id);
-//        // \\s3Uploader.delete(thumbKey);
-//        // s3Uploader.delete(contentKey);
 
         repository.delete(post);
+        log.info("[트렌드포스트 삭제 완료] postId={}", id);
     }
 
-    // 4. 전체 목록 조회
     @Override
     public TrendPostPagedResponse getAllPaged(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page - 1, size);
-            Page<TrendPost> paged = repository.findAll(pageable);
+        log.debug("[트렌드포스트 목록 조회] 요청 - page={}, size={}", page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<TrendPost> paged = repository.findAll(pageable);
 
-            List<TrendPostDTO> items = paged.stream()
-                    .map(TrendPostDTO::from)
-                    .toList();
+        List<TrendPostDTO> items = paged.stream()
+                .map(TrendPostDTO::from)
+                .toList();
 
-            return new TrendPostPagedResponse(items, page, size, paged.getTotalElements());
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
-        }
+        return new TrendPostPagedResponse(items, page, size, paged.getTotalElements());
     }
 
-    // 5. 단건 조회
     @Override
     public TrendPostDetailResponse getById(Long id) {
-        try {
-            TrendPost post = repository.findById(id)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        log.debug("[트렌드포스트 단건 조회] 요청 - postId={}", id);
+        TrendPost post = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("[트렌드포스트 조회 실패] 존재하지 않음 - postId={}", id);
+                    return new BusinessException(ErrorCode.NOT_FOUND);
+                });
 
-            return TrendPostDetailResponse.from(post);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
-        }
+        return TrendPostDetailResponse.from(post);
     }
 }
