@@ -3,6 +3,9 @@ package ready_to_marry.adminservice.event.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ready_to_marry.adminservice.event.entity.Coupon;
+import ready_to_marry.adminservice.event.repository.CouponRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -40,5 +43,25 @@ public class CouponRedisService {
     public void markCouponIssued(Long couponId, Long userId) {
         String issuedKey = "coupon_issued:" + couponId + ":" + userId;
         stringRedisTemplate.opsForValue().set(issuedKey, "1");
+    }
+
+    @Transactional(readOnly = true)
+    public void restoreStockIfNeededFromDb(Coupon coupon, Long couponId) {
+        String key = "coupon_stock:" + couponId;
+
+        // Redis에 재고 키가 없거나 0 이하인지 확인
+        String stockStr = stringRedisTemplate.opsForValue().get(key);
+        if (stockStr != null && Integer.parseInt(stockStr) > 0) {
+            return; // 재고 정상 → 복구 불필요
+        }
+
+        // 남은 재고 계산
+        int remaining = coupon.getTotalQuantity() - coupon.getIssuedQuantity();
+        if (remaining <= 0) {
+            return; // 발급 가능한 재고 없음
+        }
+
+        // Redis에 재고 복구
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(remaining));
     }
 }

@@ -23,7 +23,6 @@ public class CouponKafkaService {
 
     private final CouponRedisService couponRedisService;
     private final CouponRepository couponRepository;
-    private final CouponIssueRepository couponIssueRepository;
     private final CouponServiceImpl couponServiceImpl;
 
 
@@ -33,12 +32,17 @@ public class CouponKafkaService {
         Long userId = request.getUserId();
         System.out.println(couponId + userId);
 
+        //TODO 추후 Redis 데이터 유무, DB 확인, 쿠폰 중복 발급 로직 정리해서 리팩 필수
         try {
             if (couponRedisService.isCouponAlreadyIssued(couponId, userId)) return;
-            if (!couponRedisService.decreaseCouponStock(couponId)) return;
 
             Coupon coupon = couponRepository.findById(couponId)
                     .orElseThrow(() -> new NotFoundException("쿠폰 없음"));
+
+            if (!couponRedisService.decreaseCouponStock(couponId)) {
+                couponRedisService.restoreStockIfNeededFromDb(coupon, couponId); // DB에서 복구
+                if (!couponRedisService.decreaseCouponStock(couponId)) return; // 진짜 없음
+            }
 
             LocalDateTime now = LocalDateTime.now();
             if (!coupon.isActive()) throw new BusinessException(ErrorCode.COUPON_INACTIVE);
@@ -53,6 +57,7 @@ public class CouponKafkaService {
                     .build();
 
             couponServiceImpl.issueCoupon(couponIssue);
+            couponRepository.save(coupon);
             System.out.println("db 저장 완료");
 
             couponRedisService.markCouponIssued(couponId, userId);
