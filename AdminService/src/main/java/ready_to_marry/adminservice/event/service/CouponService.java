@@ -23,9 +23,6 @@ public interface CouponService {
     // 5. 쿠폰 전체 조회
     List<CouponDetailResponse> getAllCoupons();
 
-    // 6. 사용자 쿠폰 발급
-    CouponDetailResponse issueCoupon(Long couponId, Long userId);
-
     // 7. 내부 조회용: 쿠폰 엔티티 반환
     Coupon getCouponEntity(Long couponId);
 }
