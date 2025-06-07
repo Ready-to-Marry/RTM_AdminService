@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
+    private final CouponRedisService couponRedisService;
 
     // 1. 쿠폰 등록
     @Override
@@ -25,6 +26,8 @@ public class CouponServiceImpl implements CouponService {
     public CouponDetailResponse createCoupon(CouponRequest request, Long adminId) {
         try {
             Coupon coupon = couponRepository.save(Coupon.from(request, adminId));
+            //TODO redis 저장 실패 트랜잭션 고려해서 재설계
+            couponRedisService.setCouponStock(coupon.getCouponId(), coupon.getTotalQuantity());
             return CouponDetailResponse.from(coupon);
         } catch (Exception e) {
             throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
@@ -72,34 +75,6 @@ public class CouponServiceImpl implements CouponService {
             throw e;
         } catch (Exception e) {
             throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
-        }
-    }
-
-    // 5. 쿠폰 발급
-    @Override
-    @Transactional
-    public CouponDetailResponse issueCoupon(Long couponId, Long userId) {
-        try {
-            Coupon coupon = couponRepository.findById(couponId)
-                    .orElseThrow(() -> new NotFoundException("해당 쿠폰을 찾을 수 없습니다."));
-
-            LocalDateTime now = LocalDateTime.now();
-            if (!coupon.isActive()) {
-                throw new BusinessException(ErrorCode.COUPON_INACTIVE);
-            }
-            if (now.isBefore(coupon.getIssuedFrom()) || now.isAfter(coupon.getIssuedUntil())) {
-                throw new BusinessException(ErrorCode.COUPON_EXPIRED);
-            }
-            if (coupon.getIssuedQuantity() >= coupon.getTotalQuantity()) {
-                throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
-            }
-
-            coupon.setIssuedQuantity(coupon.getIssuedQuantity() + 1);
-            return CouponDetailResponse.from(coupon);
-        } catch (NotFoundException | BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
     }
 
