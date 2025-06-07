@@ -4,9 +4,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ready_to_marry.adminservice.common.exception.*;
+import ready_to_marry.adminservice.event.dto.request.CouponKafkaRequest;
 import ready_to_marry.adminservice.event.dto.request.CouponRequest;
 import ready_to_marry.adminservice.event.dto.response.CouponDetailResponse;
 import ready_to_marry.adminservice.event.entity.Coupon;
+import ready_to_marry.adminservice.event.entity.CouponIssue;
+import ready_to_marry.adminservice.event.repository.CouponIssueRepository;
 import ready_to_marry.adminservice.event.repository.CouponRepository;
 
 import java.time.LocalDateTime;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
+    private final CouponIssueRepository couponIssueRepository;
     private final CouponRedisService couponRedisService;
 
     // 1. 쿠폰 등록
@@ -75,6 +79,21 @@ public class CouponServiceImpl implements CouponService {
             throw e;
         } catch (Exception e) {
             throw new InfrastructureException(ErrorCode.DB_READ_FAILURE.getCode(), ErrorCode.DB_READ_FAILURE.getMessage());
+        }
+    }
+
+    // 5. 쿠폰 발급
+    @Override
+    @Transactional
+    public void issueCoupon(CouponIssue couponIssue) {
+        try {
+            System.out.println("db 저장 시작");
+            couponIssueRepository.save(couponIssue);
+            System.out.println("db 저장 완료");
+        } catch (NotFoundException | BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InfrastructureException(ErrorCode.DB_WRITE_FAILURE.getCode(), ErrorCode.DB_WRITE_FAILURE.getMessage());
         }
     }
 

@@ -3,6 +3,7 @@ package ready_to_marry.adminservice.event.service;
 import ready_to_marry.adminservice.event.dto.request.CouponRequest;
 import ready_to_marry.adminservice.event.dto.response.CouponDetailResponse;
 import ready_to_marry.adminservice.event.entity.Coupon;
+import ready_to_marry.adminservice.event.entity.CouponIssue;
 
 import java.util.List;
 
@@ -22,6 +23,9 @@ public interface CouponService {
 
     // 5. 쿠폰 전체 조회
     List<CouponDetailResponse> getAllCoupons();
+
+    // 6. 사용자 쿠폰 발급
+    void issueCoupon(CouponIssue couponIssue);
 
     // 7. 내부 조회용: 쿠폰 엔티티 반환
     Coupon getCouponEntity(Long couponId);
