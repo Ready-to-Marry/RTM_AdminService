@@ -24,13 +24,14 @@ public class CouponKafkaService {
     private final CouponRedisService couponRedisService;
     private final CouponRepository couponRepository;
     private final CouponIssueRepository couponIssueRepository;
+    private final CouponServiceImpl couponServiceImpl;
 
 
     @KafkaListener(topics = "coupon", groupId = "coupon-consumer")
-    @Transactional
     public void consumeCouponIssue(CouponKafkaRequest request) {
         Long couponId = request.getCouponId();
         Long userId = request.getUserId();
+        System.out.println(couponId + userId);
 
         try {
             if (couponRedisService.isCouponAlreadyIssued(couponId, userId)) return;
@@ -45,10 +46,14 @@ public class CouponKafkaService {
                 throw new BusinessException(ErrorCode.COUPON_EXPIRED);
 
             coupon.setIssuedQuantity(coupon.getIssuedQuantity() + 1);
-            couponIssueRepository.save(CouponIssue.builder()
-                            .userId(userId)
-                            .coupon(coupon)
-                    .build());
+
+            CouponIssue couponIssue = CouponIssue.builder()
+                    .userId(userId)
+                    .coupon(coupon)
+                    .build();
+
+            couponServiceImpl.issueCoupon(couponIssue);
+            System.out.println("db 저장 완료");
 
             couponRedisService.markCouponIssued(couponId, userId);
             log.info("쿠폰 발급 성공 - userId={}, couponId={}", userId, couponId);
